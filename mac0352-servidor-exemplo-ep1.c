@@ -39,10 +39,16 @@
 #include <arpa/inet.h>
 #include <time.h>
 #include <unistd.h>
+#include <string.h>
+
+#include "methods.h"
 
 #define LISTENQ 1
 #define MAXDATASIZE 100
 #define MAXLINE 4096
+
+char * getTopic (char *token);
+char *getMessage (char *token);
 
 int main (int argc, char **argv) {
     /* Os sockets. Um que será o socket que vai escutar pelas conexões
@@ -156,12 +162,37 @@ int main (int argc, char **argv) {
              * para que este servidor consiga interpretar comandos MQTT  */
             while ((n=read(connfd, recvline, MAXLINE)) > 0) {
                 recvline[n]=0;
-                printf("[Cliente conectado no processo filho %d enviou:] ",getpid());
-                if ((fputs(recvline,stdout)) == EOF) {
-                    perror("fputs :( \n");
-                    exit(6);
+                char * operation = strtok (recvline, " ");
+                
+                printf ("Operação == %s\n", operation);
+                
+                
+                if (strcmp (operation, "publish") == 0) {
+                    char * topic = getTopic (NULL);
+                    char * message = getMessage (NULL);
+                    publish (0, topic, message, connfd);
+                    printf ("Tópico a publicar == %s\n", topic);
+                    printf ("mensagem a publicar == %s\n", message);
                 }
-                write(connfd, recvline, strlen(recvline));
+                else if (strcmp (operation, "subscribe") == 0) {
+                    char * topic = getTopic (NULL);
+                    printf ("Tópico a se inscrever == %s\n", topic);
+                    subscribe ();
+                }
+                else if (strcmp (operation, "disconnect") == 0) {
+                    printf ("Cliente está tentando se desconectar\n");
+                    close (connfd);
+                    printf ("Conexão encrrada\n");
+                }
+                else {
+                    printf ("[Cliente enviou uma mensagem sem tópico definido]\n");
+                    printf("[Cliente conectado no processo filho %d enviou:] ",getpid());
+                    if ((fputs(recvline,stdout)) == EOF) {
+                        perror("fputs :( \n");
+                        exit(6);
+                    }
+                    write(connfd, recvline, strlen(recvline));
+                }
             }
             /* ========================================================= */
             /* ========================================================= */
@@ -182,4 +213,24 @@ int main (int argc, char **argv) {
             close(connfd);
     }
     exit(0);
+}
+
+char * getTopic (char *token) {
+    return strtok (token, " ");
+}
+
+char *getMessage (char *token) {
+    char * term = strtok (token, " "), *message;
+    message = malloc (sizeof (char) * 50);
+    int j = 0;
+    while (term != NULL) {
+        int n = strlen (term);
+        for (int i = 0; i < n && term[i] >= 0; i ++) {
+            message[j++] = term[i];
+        }
+        message[j++] = ' ';
+        term = strtok (NULL, " ");
+    }
+
+    return (message);
 }
