@@ -63,6 +63,8 @@ int main (int argc, char **argv) {
     char recvline[MAXLINE + 1];
     /* Armazena o tamanho da string lida do cliente */
     ssize_t n;
+
+    startTopicsDatas ();
    
     if (argc != 2) {
         fprintf(stderr,"Uso: %s <Porta>\n",argv[0]);
