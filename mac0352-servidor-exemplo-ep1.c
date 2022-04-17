@@ -39,16 +39,20 @@
 #include <arpa/inet.h>
 #include <time.h>
 #include <unistd.h>
-#include <string.h>
-
-#include "methods.h"
+#include <math.h>
 
 #define LISTENQ 1
 #define MAXDATASIZE 100
 #define MAXLINE 4096
 
-char * getTopic (char *token);
-char *getMessage (char *token);
+void toBit (char c, int v[]) {
+    for (int i = 0; i < 8; i ++){
+        v[i] = !!((c << i) & 0x80);
+    }
+}
+
+
+
 
 int main (int argc, char **argv) {
     /* Os sockets. Um que será o socket que vai escutar pelas conexões
@@ -63,8 +67,6 @@ int main (int argc, char **argv) {
     char recvline[MAXLINE + 1];
     /* Armazena o tamanho da string lida do cliente */
     ssize_t n;
-
-    startTopicsDatas ();
    
     if (argc != 2) {
         fprintf(stderr,"Uso: %s <Porta>\n",argv[0]);
@@ -164,37 +166,60 @@ int main (int argc, char **argv) {
              * para que este servidor consiga interpretar comandos MQTT  */
             while ((n=read(connfd, recvline, MAXLINE)) > 0) {
                 recvline[n]=0;
-                char * operation = strtok (recvline, " ");
+                printf ("Tamnho do n == %ld\n", n);
+
+                int byte[8];
+                printf ("Pacote recebido:\n");
+                for (int i = 0; i < n; i ++){
+                    toBit (recvline[i], byte);
+
+                    /* printf ("\n%c == ", recvline[i]); */
+                    for (int j = 0; j < 8; j ++)
+                        printf ("%d", byte[j]);
+                    printf ("\n");
+                }
+
+                toBit (recvline[0], byte);
+                int packetType = 0;
+                for (int i = 0; i < 4; i ++) 
+                    packetType += byte[i] * pow (2, 4 - i - 1);
                 
-                printf ("Operação == %s\n", operation);
+                printf ("Packet control type -> %d\n", packetType);
+
+                switch (packetType) {
+                case 1:
+                    /* Cliente enviou um pacote CONNECT */
+                    /* Resposta do broker enviando um CONNACK */
+                    printf ("Cliente requisitou uma conexão\n");
+                    int numBytes = 4;
+                    char header[MAXLINE + 1];
+
+                    header[0] = 32; /* primeiros 4 bits -> 0010; últimos 4 bits -> 0000 */
+                    header[1] = 2;  /* Comprimento restante -> restam dois bytes no pacote */
+                    header[2] = 0;  /* Flags de reconhecimento de conexão (Connect Acknowledge Flags) */
+                    header[3] = 0;  /* Código de retorno -> 0 == COnexão bem sucedida */
+
+                    write (connfd, header, numBytes);
+
+                    break;
+
+                case 3:
+                    /* Cliente enviou um pacote PUBLISH */
+                    /* Resposta do broker enviando um PUBACK */
+
+                    printf ("Cliente está publicando uma mensagem");
+                    break;
                 
-                
-                if (strcmp (operation, "publish") == 0) {
-                    char * topic = getTopic (NULL);
-                    char * message = getMessage (NULL);
-                    publish (0, topic, message, connfd);
-                    printf ("Tópico a publicar == %s\n", topic);
-                    printf ("mensagem a publicar == %s\n", message);
+                default:
+                    break;
                 }
-                else if (strcmp (operation, "subscribe") == 0) {
-                    char * topic = getTopic (NULL);
-                    printf ("Tópico a se inscrever == %s\n", topic);
-                    subscribe ();
+
+                /* printf("[Cliente conectado no processo filho %d enviou:] ",getpid());
+                if ((fputs(recvline,stdout)) == EOF) {
+                    perror("fputs :( \n");
+                    exit(6);
                 }
-                else if (strcmp (operation, "disconnect") == 0) {
-                    printf ("Cliente está tentando se desconectar\n");
-                    close (connfd);
-                    printf ("Conexão encrrada\n");
-                }
-                else {
-                    printf ("[Cliente enviou uma mensagem sem tópico definido]\n");
-                    printf("[Cliente conectado no processo filho %d enviou:] ",getpid());
-                    if ((fputs(recvline,stdout)) == EOF) {
-                        perror("fputs :( \n");
-                        exit(6);
-                    }
-                    write(connfd, recvline, strlen(recvline));
-                }
+                write(connfd, recvline, strlen(recvline)); */
             }
             /* ========================================================= */
             /* ========================================================= */
@@ -215,24 +240,4 @@ int main (int argc, char **argv) {
             close(connfd);
     }
     exit(0);
-}
-
-char * getTopic (char *token) {
-    return strtok (token, " ");
-}
-
-char *getMessage (char *token) {
-    char * term = strtok (token, " "), *message;
-    message = malloc (sizeof (char) * 50);
-    int j = 0;
-    while (term != NULL) {
-        int n = strlen (term);
-        for (int i = 0; i < n && term[i] >= 0; i ++) {
-            message[j++] = term[i];
-        }
-        message[j++] = ' ';
-        term = strtok (NULL, " ");
-    }
-
-    return (message);
 }

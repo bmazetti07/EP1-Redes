@@ -1,0 +1,5 @@
+Pacote CONNACK:
+    Assumindo que todo cliente que conecta é um novo cliente, o que significa 
+    que a flag 'Session Present' sempre vai ser 0, logo o byte que representa
+    as flags de reconhecimento de conexão sempre vai ser 0;
+    

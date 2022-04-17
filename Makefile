@@ -18,6 +18,8 @@ CC=gcc
 # Flags for compiler
 CC_FLAGS=-c -W -Wall -ansi -pedantic
 
+MATH_LIB_FLAG+=-lm
+
 
 
 
@@ -28,10 +30,10 @@ CC_FLAGS=-c -W -Wall -ansi -pedantic
 all: $(PROJ_NAME) clean
 
 $(PROJ_NAME): $(OBJ)
-	$(CC) -o $@ $^
+	$(CC) -o $@ $^ $(MATH_LIB_FLAG)
 
 %.o: %.c %.h
-	$(CC) -o $@ $< $(CC_FLAGS)
+	$(CC) -o= $@ $< $(CC_FLAGS)
 
 main.o: main.c $(H_SOURCE)
 	$(CC) -o $@ $< $(CC_FLAGS)
