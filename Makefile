@@ -33,7 +33,7 @@ $(PROJ_NAME): $(OBJ)
 	$(CC) -o $@ $^ $(MATH_LIB_FLAG)
 
 %.o: %.c %.h
-	$(CC) -o= $@ $< $(CC_FLAGS)
+	$(CC) -o $@ $< $(CC_FLAGS) $(MATH_LIB_FLAG)
 
 main.o: main.c $(H_SOURCE)
 	$(CC) -o $@ $< $(CC_FLAGS)

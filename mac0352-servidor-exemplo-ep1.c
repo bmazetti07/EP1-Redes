@@ -41,16 +41,11 @@
 #include <unistd.h>
 #include <math.h>
 
+#include "auxiliar.h"
+
 #define LISTENQ 1
 #define MAXDATASIZE 100
 #define MAXLINE 4096
-
-void toBit (char c, int v[]) {
-    for (int i = 0; i < 8; i ++){
-        v[i] = !!((c << i) & 0x80);
-    }
-}
-
 
 
 
@@ -206,8 +201,36 @@ int main (int argc, char **argv) {
                 case 3:
                     /* Cliente enviou um pacote PUBLISH */
                     /* Resposta do broker enviando um PUBACK */
+                    /* Enviar para os outros clientes inscritos no tópico */
 
-                    printf ("Cliente está publicando uma mensagem");
+                    printf ("Cliente está publicando uma mensagem\n");
+
+                    int tam = 0;
+                    toBit (recvline[3], byte);
+                    tam = calculaBit (byte);
+
+                    char *topico = "";
+                    // mosquitto_pub -h 192.168.1.108 -t 'topico' -p 8000 -m 'eae kraio'
+                    for (int j = 4; j < 4 + tam; j ++) {
+                        int x;
+                        toBit (recvline[j], byte);
+                        x = calculaBit (byte);
+                        char c = x;
+                        strncat (topico, &c, 1);
+                    }
+
+                    printf ("Tópico == %s\n", topico);
+
+                    for (int j = 10; j < n; j ++) {
+                        toBit (recvline[j], byte);
+                        int x = 0;
+                        for (int i = 0; i < 8; i ++) {
+                            x += byte[i] * pow (2, 8 - i - 1);
+                        }
+                        
+                        printf ("X == %c\n", x);
+                    }
+
                     break;
                 
                 default:
