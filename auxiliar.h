@@ -7,11 +7,11 @@ char *topicos[MAXTOPICS];
 
 void toBit (char c, int v[]);
 
-int calculaBit (int byte[]);
+int calculaBit (int byte[], int limite);
 
 int procuraTopico (char * topico, char *vetor[]);
 
-void adicionaTopico (char *topico, char *vetor[]);
+int adicionaTopico (char *topico, char *vetor[]);
 
 
 #endif
