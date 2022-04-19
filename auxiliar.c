@@ -33,5 +33,5 @@ int procuraTopico (char * topico, char *vetor[]) {
         if (strcmp (topico, vetor[i]) == 0)
             return i;
 
-    return adicionaTopico (topico, vetor);
+    return -1;
 }

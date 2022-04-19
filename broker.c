@@ -246,6 +246,22 @@ int main (int argc, char **argv) {
                     printf ("Tópico == %s\n", topico);
 
                     indiceTopico = procuraTopico(topico, topicos);
+                    if (indiceTopico == -1) {
+                        indiceTopico = adicionaTopico (topico, topicos);
+                        strcpy (meu_pipe[indiceTopico], "");
+                        strcat (topico, "-");
+                        for (int i = 0; i < 6; i ++)
+                            strncat (topico, &endChar, 1);
+                        strncpy (meu_pipe[indiceTopico], topico, strlen (topico));
+                        
+                        if (mkstemp (meu_pipe[indiceTopico]) < 1) {
+                            printf ("Erro na criação do arquivo de pipe\n");
+                            return 1;
+                        }
+                        else {
+                            printf ("Arquivo de pipe temporário %s criado\n", auxFile);
+                        }
+                    }
                     printf ("Indice tópico pub == %d\n", indiceTopico);
 
 
@@ -266,25 +282,10 @@ int main (int argc, char **argv) {
                     unlink((const char *) meu_pipe[indiceTopico]); */
 
 
-                    strcpy (auxFile, "");
-                    strcat (topico, "-");
-                    for (int i = 0; i < 6; i ++)
-                        strncat (topico, &endChar, 1);
-                    strncpy (auxFile, topico, strlen (topico));
-                    strncpy (meu_pipe[indiceTopico], auxFile, strlen (auxFile));
-                    
-                    if (mkstemp (auxFile) < 1) {
-                        printf ("Erro na criação do arquivo de pipe\n");
-                        return 1;
-                    }
-                    else {
-                        printf ("Arquivo de pipe temporário %s criado\n", auxFile);
-                    }
-
-                    meu_pipe_fd[indiceTopico] = open (auxFile, O_WRONLY);
-                    unlink((const char *) auxFile);
+                    meu_pipe_fd[indiceTopico] = open (meu_pipe[indiceTopico], O_WRONLY);
+                    unlink((const char *) meu_pipe[indiceTopico]);
                     write(meu_pipe_fd[indiceTopico], recvline, strlen(recvline));
-                    close (meu_pipe_fd[indiceTopico]);
+                    //close (meu_pipe_fd[indiceTopico]);
                     break;
 
 /* -----------------------------------------  SUBSCRIBE --------------------------------------- */
@@ -321,6 +322,22 @@ int main (int argc, char **argv) {
 
                     printf ("Tópico == %s\n", topico);
                     indiceTopico = procuraTopico(topico, topicos);
+                    if (indiceTopico == -1) {
+                        indiceTopico = adicionaTopico (topico, topicos);
+                        strcpy (meu_pipe[indiceTopico], "");
+                        strcat (topico, "-");
+                        for (int i = 0; i < 6; i ++)
+                            strncat (topico, &endChar, 1);
+                        strncpy (meu_pipe[indiceTopico], topico, strlen (topico));
+                        
+                        if (mkstemp (meu_pipe[indiceTopico]) < 1) {
+                            printf ("Erro na criação do arquivo de pipe\n");
+                            return 1;
+                        }
+                        else {
+                            printf ("Arquivo de pipe temporário %s criado\n", auxFile);
+                        }
+                    }
                         printf ("Indice tópico sub == %d\n", indiceTopico);
                     printf ("Tópico selecionado -> %s\n", topicos[indiceTopico]);
 
