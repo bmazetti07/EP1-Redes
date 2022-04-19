@@ -68,7 +68,7 @@ int main (int argc, char **argv) {
     /** Nome do arquivo temporário que vai ser criado **/
     char meu_pipe[MAXTOPICS][MAXDATASIZE + 1];
 
-    char endChar = 'X';
+    char endChar[8] = "-XXXXXX";
    
     if (argc != 2) {
         fprintf(stderr,"Uso: %s <Porta>\n",argv[0]);
@@ -248,10 +248,8 @@ int main (int argc, char **argv) {
                     indiceTopico = procuraTopico(topico, topicos);
                     if (indiceTopico == -1) {
                         indiceTopico = adicionaTopico (topico, topicos);
+                        strncat (topico, endChar, 7);
                         strcpy (meu_pipe[indiceTopico], "");
-                        strcat (topico, "-");
-                        for (int i = 0; i < 6; i ++)
-                            strncat (topico, &endChar, 1);
                         strncpy (meu_pipe[indiceTopico], topico, strlen (topico));
                         
                         if (mkstemp (meu_pipe[indiceTopico]) < 1) {
@@ -294,12 +292,13 @@ int main (int argc, char **argv) {
                     numBytes = 5;
                     static char header[MAXLINE + 1];
 
+                    /* Pacote do SUBACK */
                     header[0] = 144; /* primeiros 4 bits -> 1001; últimos 4 bits -> 0000 */
-                    header[1] = 3;
+                    header[1] = 3;   /* Restam 3 bytes no pacote */
                     toBit (recvline[2], byte);
-                    header[2] = calculaBit (byte, 8);
+                    header[2] = calculaBit (byte, 8); /* Packet Identifier MSB -> mesmo que o do SUBSCRIBE */
                     toBit (recvline[3], byte);
-                    header[3] = calculaBit (byte, 8);
+                    header[3] = calculaBit (byte, 8); /* Packet Identifier LSB -> mesmo que o do SUBSCRIBE */
                     header[4] = 0;
 
                     write (connfd, header, numBytes);
@@ -324,10 +323,8 @@ int main (int argc, char **argv) {
                     indiceTopico = procuraTopico(topico, topicos);
                     if (indiceTopico == -1) {
                         indiceTopico = adicionaTopico (topico, topicos);
+                        strncat (topico, endChar, 7);
                         strcpy (meu_pipe[indiceTopico], "");
-                        strcat (topico, "-");
-                        for (int i = 0; i < 6; i ++)
-                            strncat (topico, &endChar, 1);
                         strncpy (meu_pipe[indiceTopico], topico, strlen (topico));
                         
                         if (mkstemp (meu_pipe[indiceTopico]) < 1) {
