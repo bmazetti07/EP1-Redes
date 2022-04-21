@@ -371,7 +371,7 @@ int main (int argc, char **argv) {
                     while ((n=read(meu_pipe_fd[indiceTopico][0], recvlineSub, MAXLINE)) > 0) {
                         recvlineSub[n]=0;
                         printf ("Tamanho do n lido no subscribe == %ld\n", n);
-                        write(connfd,         recvlineSub, strlen(recvlineSub));
+                        write(connfd,         recvlineSub, n);
                         printf ("\n\n\n\n\n\n\n\n");
                         toBit (recvlineSub[1], byte);
                         size = calculaBit (byte, 8) + 2;
@@ -409,7 +409,7 @@ int main (int argc, char **argv) {
                         }
 
                         printf ("Mensagem no subscribe == %s\n", mensagem);
-                        write(connfd, mensagem, strlen(mensagem));
+                        //write(connfd, recvlineSub, strlen(recvlineSub));
                         printf ("\n\n\n\n\n\n\n\n");
                     }
                     close(meu_pipe_fd[indiceTopico][0]);
