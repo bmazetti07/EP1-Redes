@@ -41,6 +41,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 
 #include "auxiliar.h"
 
@@ -61,10 +62,12 @@ int main (int argc, char **argv) {
     pid_t childpid;
     /* Armazena linhas recebidas do cliente */
     char recvline[MAXLINE + 1];
+    char recvlineSub[MAXLINE + 1];
+    char recvlinePub[MAXLINE + 1];
     /* Armazena o tamanho da string lida do cliente */
     ssize_t n;
     /** Descritor de arquivo para o pipe **/
-    int meu_pipe_fd[MAXTOPICS];
+    int meu_pipe_fd[MAXTOPICS][2];
     /** Nome do arquivo temporário que vai ser criado **/
     char meu_pipe[MAXTOPICS][MAXDATASIZE + 1];
 
@@ -75,6 +78,11 @@ int main (int argc, char **argv) {
         fprintf(stderr,"Vai rodar um servidor de echo na porta <Porta> TCP\n");
         exit(1);
     }
+
+    /* mkstemp (meu_pipe[0]);
+    if (mkfifo((const char *) meu_pipe[0],0644) == -1) {
+        perror("mkfifo :(\n");
+    } */
 
     /* Criação de um socket. É como se fosse um descritor de arquivo.
      * É possível fazer operações como read, write e close. Neste caso o
@@ -117,6 +125,13 @@ int main (int argc, char **argv) {
 
     printf("[Servidor no ar. Aguardando conexões na porta %s]\n",argv[1]);
     printf("[Para finalizar, pressione CTRL+c ou rode um kill ou killall]\n");
+
+    for (int i = 0; i < 3; i ++) 
+        if (pipe (meu_pipe_fd[i]) < 0) {
+            perror ("erro na criação dos pipes\n");
+            return -1;
+        }
+    
    
     /* O servidor no final das contas é um loop infinito de espera por
      * conexões e processamento de cada uma individualmente */
@@ -174,6 +189,7 @@ int main (int argc, char **argv) {
                 char header[MAXLINE + 1];
                 char topico[MAXDATASIZE+1] = "", c;
                 char auxFile[MAXDATASIZE + 10];
+                char mensagem[MAXDATASIZE + 1] = "";
 
 
                 recvline[n]=0;
@@ -183,6 +199,7 @@ int main (int argc, char **argv) {
                 size = calculaBit (byte, 8) + 2;
                 printf ("Tamanho do n == %ld\n", n);
                 printf ("Valor de size == %d\n", size);
+                printf ("Tamanho do recvline assim que é recebido == %ld\n", strlen (recvline));
 
                 printf ("Pacote recebido:\n");
                 for (int i = 0; i < size; i ++){
@@ -207,7 +224,7 @@ int main (int argc, char **argv) {
                 case 1:
                     /* Cliente enviou um pacote CONNECT */
                     /* Resposta do broker enviando um CONNACK */
-                    printf ("Cliente requisitou uma conexão\n");
+                    printf ("Cliente requisitou uma conexão\n\n\n");
                     numBytes = 4;
                     strcpy (header, "");
 
@@ -226,7 +243,7 @@ int main (int argc, char **argv) {
                     /* Cliente enviou um pacote PUBLISH */
                     /* Resposta do broke enviando a mensagem para os clientes inscritos no tópico */
 
-                    printf ("Cliente está publicando uma mensagem\n");
+                    printf ("Cliente está publicando uma mensagem\n\n\n");
 
                     tam = 0;
                     toBit (recvline[3], byte);
@@ -248,7 +265,7 @@ int main (int argc, char **argv) {
                     indiceTopico = procuraTopico(topico, topicos);
                     if (indiceTopico == -1) {
                         indiceTopico = adicionaTopico (topico, topicos);
-                        strncat (topico, endChar, 7);
+                        /* strncat (topico, endChar, 7);
                         strcpy (meu_pipe[indiceTopico], "");
                         strncpy (meu_pipe[indiceTopico], topico, strlen (topico));
                         
@@ -257,13 +274,17 @@ int main (int argc, char **argv) {
                             return 1;
                         }
                         else {
+                            if (mkfifo ((const char *) auxFile, 0644) == -1) {
+                                printf ("Erro na criação do arquivo FIFO\n");
+                                exit (1);
+                            }
                             printf ("Arquivo de pipe temporário %s criado\n", auxFile);
-                        }
+                        } */
                     }
                     printf ("Indice tópico pub == %d\n", indiceTopico);
 
 
-                    char mensagem[MAXDATASIZE + 1] = "";
+                    strcpy (mensagem, "");
                     for (int j = 4 + tam; j < size; j ++) {
                         toBit (recvline[j], byte);
                         x = calculaBit (byte, 8);
@@ -279,11 +300,26 @@ int main (int argc, char **argv) {
                     meu_pipe_fd[indiceTopico] = open (meu_pipe[indiceTopico], O_WRONLY);
                     unlink((const char *) meu_pipe[indiceTopico]); */
 
+                    printf ("\n\n\n\n\nPacote sendo publicado:\n");
+                    for (int i = 0; i < size; i ++) {
+                        recvlinePub[i] = recvline[i];
+                        toBit (recvlinePub[i], byte);
 
-                    meu_pipe_fd[indiceTopico] = open (meu_pipe[indiceTopico], O_WRONLY);
-                    unlink((const char *) meu_pipe[indiceTopico]);
-                    write(meu_pipe_fd[indiceTopico], recvline, strlen(recvline));
-                    //close (meu_pipe_fd[indiceTopico]);
+                        for (int j = 0; j < 8; j ++)
+                            printf ("%d", byte[j]);
+                        printf ("\n");
+                    }
+                    printf ("\n\n\n\n\n");
+
+                    close (meu_pipe_fd[indiceTopico][0]);
+                    //meu_pipe_fd[indiceTopico] = open (meu_pipe[indiceTopico], O_WRONLY);
+                    //printf ("meu_pipe_fd[%d] no PUBLISH == %d\n", indiceTopico, meu_pipe_fd[indiceTopico]);
+                    //unlink((const char *) meu_pipe[indiceTopico]);
+                //open (meu_pipe_fd[indiceTopico][1], O_WRONLY);
+                    printf ("Tamanho do recvlinePub == %ld\n", strlen(recvlinePub));
+                    printf ("Tamanho do recvline == %ld\n", strlen(recvline));
+                    write(meu_pipe_fd[indiceTopico][1], recvlinePub, size);
+                    close (meu_pipe_fd[indiceTopico][1]);
                     break;
 
 /* -----------------------------------------  SUBSCRIBE --------------------------------------- */
@@ -292,7 +328,7 @@ int main (int argc, char **argv) {
                     numBytes = 5;
                     static char header[MAXLINE + 1];
 
-                    /* Pacote do SUBACK */
+                    /* Ínicio do pacote SUBACK */
                     header[0] = 144; /* primeiros 4 bits -> 1001; últimos 4 bits -> 0000 */
                     header[1] = 3;   /* Restam 3 bytes no pacote */
                     toBit (recvline[2], byte);
@@ -302,9 +338,10 @@ int main (int argc, char **argv) {
                     header[4] = 0;
 
                     write (connfd, header, numBytes);
+                    /* Fim do pacote SUBACK */
 
 
-                    printf ("Cliente está se inscrevendo em um tópico\n");
+                    printf ("Cliente está se inscrevendo em um tópico\n\n\n");
 
                     tam = 0;
                     toBit (recvline[5], byte);
@@ -321,60 +358,67 @@ int main (int argc, char **argv) {
 
                     printf ("Tópico == %s\n", topico);
                     indiceTopico = procuraTopico(topico, topicos);
-                    if (indiceTopico == -1) {
+                    if (indiceTopico == -1) 
                         indiceTopico = adicionaTopico (topico, topicos);
-                        strncat (topico, endChar, 7);
-                        strcpy (meu_pipe[indiceTopico], "");
-                        strncpy (meu_pipe[indiceTopico], topico, strlen (topico));
-                        
-                        if (mkstemp (meu_pipe[indiceTopico]) < 1) {
-                            printf ("Erro na criação do arquivo de pipe\n");
-                            return 1;
-                        }
-                        else {
-                            printf ("Arquivo de pipe temporário %s criado\n", auxFile);
-                        }
-                    }
+                    
                         printf ("Indice tópico sub == %d\n", indiceTopico);
                     printf ("Tópico selecionado -> %s\n", topicos[indiceTopico]);
 
-                    meu_pipe_fd[indiceTopico] = open(meu_pipe[indiceTopico],O_RDONLY);
-                    printf ("meu_pipe_fd[%d] == %d", indiceTopico, meu_pipe_fd[indiceTopico]);
-                    while ((n=read(meu_pipe_fd[indiceTopico], recvline, MAXLINE)) > 0) {
-                        recvline[n]=0;
+                    close (meu_pipe_fd[indiceTopico][1]);
+                    //meu_pipe_fd[indiceTopico] = open(meu_pipe[indiceTopico],O_RDONLY);
+                //open (meu_pipe_fd[indiceTopico][0], O_RDONLY);
+                    //printf ("meu_pipe_fd[%d] == %d\n", indiceTopico, meu_pipe_fd[indiceTopico]);
+                    while ((n=read(meu_pipe_fd[indiceTopico][0], recvlineSub, MAXLINE)) > 0) {
+                        recvlineSub[n]=0;
                         printf ("Tamanho do n lido no subscribe == %ld\n", n);
-                        write(connfd,         recvline, strlen(recvline));
+                        write(connfd,         recvlineSub, strlen(recvlineSub));
                         printf ("\n\n\n\n\n\n\n\n");
-                        toBit (recvline[1], byte);
+                        toBit (recvlineSub[1], byte);
                         size = calculaBit (byte, 8) + 2;
                         printf ("Tamanho do n == %ld\n", n);
                         printf ("Valor de size == %d\n", size);
 
-                        printf ("Pacote recebido:\n");
-                        for (int i = 0; i < size; i ++){
-                            toBit (recvline[i], byte);
+                        tam = 0;
+                        toBit (recvlineSub[3], byte);
+                        tam = calculaBit (byte, 8);
 
-                            /* printf ("\n%c == ", recvline[i]); */
+                        printf ("Pacote recebido no subscribe:\n");
+                        for (int i = 0; i < size; i ++){
+                            toBit (recvlineSub[i], byte);
+
+                            /* printf ("\n%c == ", recvlineSub[i]); */
                             for (int j = 0; j < 8; j ++)
                                 printf ("%d", byte[j]);
                             printf ("\n");
                         }
 
                         /* Identificação do tipo do pacote recebido */
-                        toBit (recvline[0], byte);
+                        toBit (recvlineSub[0], byte);
                         int packetType = 0;
                         packetType = calculaBit (byte, 4);
                         
                         printf ("Packet control type -> %d\n", packetType);
+
+                        strcpy (mensagem, "");
+                        for (int j = 4 + tam; j < size; j ++) {
+                            toBit (recvlineSub[j], byte);
+                            x = calculaBit (byte, 8);
+
+                            c = x;
+                            strncat (mensagem, &c, 1);
+                        }
+
+                        printf ("Mensagem no subscribe == %s\n", mensagem);
+                        write(connfd, mensagem, strlen(mensagem));
                         printf ("\n\n\n\n\n\n\n\n");
                     }
-                    close(meu_pipe_fd[indiceTopico]);
+                    close(meu_pipe_fd[indiceTopico][0]);
                     break;
 
 /* ------------------------------------- DISCONNECT ------------------------------------------ */
 
                 case 14:
-                    printf ("Cliente está se desconectando\n");
+                    printf ("Cliente está se desconectando\n\n\n");
                     break;
                 
                 default:
