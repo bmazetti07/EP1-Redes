@@ -171,7 +171,7 @@ int main (int argc, char **argv) {
                 char tempPath[MAXDATASIZE];
                 int fd;
 
-                strcpy (tempPath, "tmp/");
+                strcpy (tempPath, "/tmp/");
 
 
                 recvline[n]=0;
