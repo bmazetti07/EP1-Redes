@@ -2,8 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-
-static int nextTopic = 0;
+#include "auxiliar.h"
 
 void toBit (char c, int v[]) {
     int i;
@@ -20,18 +19,14 @@ int calculaBit (int byte[], int limite) {
     return x;
 }
 
-int adicionaTopico (char *topico, char *vetor[]) {
-    vetor[nextTopic++] = topico;
-
-    return nextTopic -1;
-}
-
-int procuraTopico (char * topico, char *vetor[]) {
-    int i;
-
-    for (i = 0; i < nextTopic; i ++) 
-        if (strcmp (topico, vetor[i]) == 0)
-            return i;
-
-    return -1;
+void leStringPacote (int ini, int fim, char recvline[], char * topico) {
+    int byte[8];
+    int x, j;
+    char c;
+    for (j = ini; j < fim; j ++) {
+        toBit (recvline[j], byte);
+        x = calculaBit (byte, 8);
+        c = x;
+        strncat (topico, &c, 1);
+    }
 }
