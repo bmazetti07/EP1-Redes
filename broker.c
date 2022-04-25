@@ -227,7 +227,7 @@ int main (int argc, char **argv) {
 
                     lockf (fd, F_LOCK, 0);
                     write (fd, recvline, size);
-                    sleep (2);
+                    sleep (1.5);
                     lockf (fd, F_ULOCK, 0);
 
                     
@@ -272,7 +272,6 @@ int main (int argc, char **argv) {
                             write(connfd,         recvlineSub, numBytes);
                         }
                         
-                        sleep (1);
                     }
 
                     break;
@@ -280,7 +279,6 @@ int main (int argc, char **argv) {
 /* ------------------------------------- DISCONNECT ------------------------------------------ */
 
                 case 14:
-                    printf ("Cliente está se desconectando\n\n\n");
                     close (connfd);
                     break;
                 
