@@ -42,6 +42,8 @@
 #include <math.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include <sys/types.h>
 
 #include "auxiliar.h"
 
@@ -303,6 +305,7 @@ int main (int argc, char **argv) {
             /* Se for o pai, a única coisa a ser feita é fechar o socket
              * connfd (ele é o socket do cliente específico que será tratado
              * pelo processo filho) */
+            signal(SIGCHLD, SIG_IGN);
             close(connfd);
     }
     exit(0);
